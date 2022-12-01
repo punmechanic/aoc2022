@@ -8,6 +8,15 @@ struct ParseError {
     reason: String,
 }
 
+impl From<(usize, ParseIntError)> for ParseError {
+    fn from((n, err): (usize, ParseIntError)) -> Self {
+        Self {
+            lineno: n,
+            reason: err.to_string(),
+        }
+    }
+}
+
 #[derive(Default, Debug, PartialEq, Eq)]
 struct Elf {
     meals: Vec<u32>,
@@ -43,17 +52,14 @@ fn parse_elves(inventory: &str) -> Result<Vec<Elf>, ParseError> {
             }
 
             state.line += 1;
-            let calories = str::parse(line).map_err(|e: ParseIntError| ParseError {
-                reason: e.to_string(),
-                lineno: state.line,
-            });
 
+            let calories = str::parse(line).map_err(|e| (state.line, e))?;
             let elf = state.elves.last_mut().expect(&format!(
                 "tried to add calories to an elf but there were none in the vec (line: {})",
                 state.line
             ));
 
-            elf.meals.push(calories?);
+            elf.meals.push(calories);
             Ok(state)
         })
         .map(|r| r.elves)
