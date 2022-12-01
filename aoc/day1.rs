@@ -88,13 +88,12 @@ fn find_maximum_calories(doc: &str) -> Result<Option<u32>, ParseError> {
 }
 
 fn find_top_three_highest_calories(doc: &str) -> Result<Option<u32>, ParseError> {
-    let elves = parse_elves(doc)?;
-    let mut calories: Vec<u32> = elves.iter().map(|elf| elf.total_calories).collect();
-    calories.sort_unstable();
-    calories.reverse();
+    let mut elves = parse_elves(doc)?;
+    elves.sort_unstable_by_key(|elf| elf.total_calories);
+    elves.reverse();
 
-    let total = match &calories[..=2] {
-        &[a, b, c] => Some(a + b + c),
+    let total = match &elves[..=2] {
+        [a, b, c] => Some(a.total_calories + b.total_calories + c.total_calories),
         _ => None,
     };
 
