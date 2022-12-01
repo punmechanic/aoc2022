@@ -20,11 +20,33 @@ impl From<(usize, ParseIntError)> for ParseError {
 #[derive(Default, Debug, PartialEq, Eq)]
 struct Elf {
     meals: Vec<u32>,
+    total_calories: u32,
 }
 
 impl Elf {
-    fn total_calories(&self) -> u32 {
-        self.meals.iter().sum()
+    fn new() -> Self {
+        Elf::default()
+    }
+
+    fn with_meals(meals: Vec<u32>) -> Self {
+        let mut elf = Self::new();
+        elf.meals = meals;
+        elf.refresh_total_calories();
+        elf
+    }
+
+    fn add_meal(&mut self, calories: u32) {
+        self.meals.push(calories);
+        self.total_calories += calories;
+    }
+
+    fn refresh_total_calories(&mut self) {
+        let mut total = 0;
+        for meal in &self.meals {
+            total += meal;
+        }
+
+        self.total_calories = total;
     }
 }
 
@@ -42,24 +64,23 @@ fn parse_elves(inventory: &str) -> Result<Vec<Elf>, ParseError> {
             state.line += 1;
 
             match (line.is_empty(), str::parse::<u32>(line)) {
+                // Acts as a "flush", putting a new elf on the stack.
                 (true, _) => {
-                    state.elves.push(Elf::default());
+                    state.elves.push(Elf::new());
                     Ok(state)
                 }
                 (false, Ok(calories)) => {
-                    // If we reach this point, this is our first non-empty line that we've seen.
-                    // This means we're about to add an Elf, and one needs to be present for our
-                    // vector access to work.
-                    if state.elves.len() == 0 {
-                        state.elves.push(Elf::default());
-                    }
+                    let elf = {
+                        if state.elves.len() == 0 {
+                            // This is our first non-empty line.
+                            state.elves.push(Elf::new());
+                        };
 
-                    let elf = state.elves.last_mut().expect(&format!(
-                        "tried to add calories to an elf but there were none in the vec (line: {})",
-                        state.line
-                    ));
+                        // It's not possible for this to be None because we already check if its empty above.
+                        state.elves.last_mut().unwrap()
+                    };
 
-                    elf.meals.push(calories);
+                    elf.add_meal(calories);
                     Ok(state)
                 }
                 (false, Err(e)) => Err((state.line, e).into()),
@@ -70,13 +91,13 @@ fn parse_elves(inventory: &str) -> Result<Vec<Elf>, ParseError> {
 
 fn find_maximum_calories(doc: &str) -> Result<Option<u32>, ParseError> {
     let elves = parse_elves(doc)?;
-    let totals = elves.iter().map(|elf| elf.total_calories());
+    let totals = elves.iter().map(|elf| elf.total_calories);
     Ok(totals.max())
 }
 
 fn find_top_three_highest_calories(doc: &str) -> Result<Option<u32>, ParseError> {
     let elves = parse_elves(doc)?;
-    let mut calories: Vec<u32> = elves.iter().map(|elf| elf.total_calories()).collect();
+    let mut calories: Vec<u32> = elves.iter().map(|elf| elf.total_calories).collect();
     calories.sort_unstable();
     calories.reverse();
 
@@ -134,17 +155,11 @@ mod tests {
     fn it_populates_elves_correctly() {
         let elves = &parse_elves(TEST_DOCUMENT).unwrap()[..];
         let expected = &[
-            Elf {
-                meals: vec![1000, 2000, 3000],
-            },
-            Elf { meals: vec![4000] },
-            Elf {
-                meals: vec![5000, 6000],
-            },
-            Elf {
-                meals: vec![7000, 8000, 9000],
-            },
-            Elf { meals: vec![10000] },
+            Elf::with_meals(vec![1000, 2000, 3000]),
+            Elf::with_meals(vec![4000]),
+            Elf::with_meals(vec![5000, 6000]),
+            Elf::with_meals(vec![7000, 8000, 9000]),
+            Elf::with_meals(vec![10000]),
         ][..];
 
         for n in 0..expected.len() {
