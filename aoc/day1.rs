@@ -1,6 +1,10 @@
 // https://adventofcode.com/2022/day/1
-
-use std::num::ParseIntError;
+use clap::{Parser, ValueEnum};
+use std::{
+    fs::File,
+    io::{self, stdin, Read},
+    num::ParseIntError,
+};
 
 #[derive(Debug)]
 struct ParseError {
@@ -50,7 +54,11 @@ impl Elf {
     }
 }
 
-fn parse_elves(inventory: &str) -> Result<Vec<Elf>, ParseError> {
+fn parse_elves<R: Read>(mut reader: R) -> Result<Vec<Elf>, ParseError> {
+    let mut inventory = String::new();
+    // This is bad but I do not care.
+    reader.read_to_string(&mut inventory).unwrap();
+
     let initial: (usize, Vec<Elf>) = (0, Vec::new());
     inventory
         .split_terminator("\n")
@@ -81,14 +89,14 @@ fn parse_elves(inventory: &str) -> Result<Vec<Elf>, ParseError> {
         .map(|(_, elves)| elves)
 }
 
-fn find_maximum_calories(doc: &str) -> Result<Option<u32>, ParseError> {
-    let elves = parse_elves(doc)?;
+fn find_maximum_calories<R: Read>(reader: R) -> Result<Option<u32>, ParseError> {
+    let elves = parse_elves(reader)?;
     let totals = elves.iter().map(|elf| elf.total_calories);
     Ok(totals.max())
 }
 
-fn find_top_three_highest_calories(doc: &str) -> Result<Option<u32>, ParseError> {
-    let mut elves = parse_elves(doc)?;
+fn find_top_three_highest_calories<R: Read>(mut reader: R) -> Result<Option<u32>, ParseError> {
+    let mut elves = parse_elves(&mut reader)?;
     elves.sort_unstable_by_key(|elf| elf.total_calories);
     elves.reverse();
 
@@ -100,32 +108,74 @@ fn find_top_three_highest_calories(doc: &str) -> Result<Option<u32>, ParseError>
     Ok(total)
 }
 
+#[derive(ValueEnum, Clone)]
+enum Mode {
+    Part1,
+    Part2,
+}
+
+#[derive(Parser)]
+struct Program {
+    #[arg(long)]
+    mode: Mode,
+
+    #[arg(name = "FILE", default_value = "-")]
+    input_file: String,
+}
+
+impl Program {
+    fn get_reader(&self) -> io::Result<Box<dyn Read>> {
+        let read: Box<dyn Read> = match self.input_file.as_str() {
+            "" | "-" => Box::new(stdin()),
+            name => Box::new(File::open(name)?),
+        };
+
+        Ok(read)
+    }
+}
+
+fn run(program: &Program) -> Result<(), ParseError> {
+    let mut reader = match program.get_reader() {
+        Err(e) => {
+            eprintln!("Failed to open file for reader: {}", e);
+            std::process::exit(1);
+        }
+        Ok(reader) => reader,
+    };
+
+    match program.mode {
+        Mode::Part1 => {
+            let calories = match find_maximum_calories(&mut reader)? {
+                Some(cal) => cal,
+                None => 0,
+            };
+
+            println!("{calories}");
+        }
+        Mode::Part2 => {
+            let calories = match find_top_three_highest_calories(&mut reader)? {
+                Some(cal) => cal,
+                None => 0,
+            };
+
+            println!("{calories}");
+        }
+    };
+
+    Ok(())
+}
+
 fn main() {
-    let doc = include_str!("day1.txt");
-    match (
-        find_maximum_calories(doc),
-        find_top_three_highest_calories(doc),
-    ) {
-        (Ok(Some(max)), Ok(Some(top3))) => {
-            println!("max calories: {}", max);
-            println!("top 3 calories: {}", top3);
-        }
-
-        (Ok(None), _) | (_, Ok(None)) => {
-            eprintln!("one of the samples received a blank document, but not both?");
-        }
-
-        (Err(err), _) | (_, Err(err)) => {
-            eprintln!("line {} error: {}", err.lineno, err.reason)
-        }
+    let prog = Program::parse();
+    if let Err(e) = run(&prog) {
+        eprintln!("line {} error: {}", e.lineno, e.reason)
     }
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::{find_maximum_calories, find_top_three_highest_calories, parse_elves, Elf};
-    const TEST_DOCUMENT: &str = "
+    const TEST_DOCUMENT: &[u8] = b"
 1000
 2000
 3000
