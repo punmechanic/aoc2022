@@ -50,43 +50,35 @@ impl Elf {
     }
 }
 
-#[derive(Default)]
-struct ReducerState {
-    line: usize,
-    elves: Vec<Elf>,
-}
-
 fn parse_elves(inventory: &str) -> Result<Vec<Elf>, ParseError> {
-    let initial = ReducerState::default();
+    let initial: (usize, Vec<Elf>) = (0, Vec::new());
     inventory
         .split_terminator("\n")
-        .try_fold(initial, |mut state, line| {
-            state.line += 1;
-
+        .try_fold(initial, |(n, mut elves), line| {
             match (line.is_empty(), str::parse::<u32>(line)) {
                 // Acts as a "flush", putting a new elf on the stack.
                 (true, _) => {
-                    state.elves.push(Elf::new());
-                    Ok(state)
+                    elves.push(Elf::new());
+                    Ok((n, elves))
                 }
                 (false, Ok(calories)) => {
                     let elf = {
-                        if state.elves.len() == 0 {
+                        if elves.len() == 0 {
                             // This is our first non-empty line.
-                            state.elves.push(Elf::new());
+                            elves.push(Elf::new());
                         };
 
                         // It's not possible for this to be None because we already check if its empty above.
-                        state.elves.last_mut().unwrap()
+                        elves.last_mut().unwrap()
                     };
 
                     elf.add_meal(calories);
-                    Ok(state)
+                    Ok((n, elves))
                 }
-                (false, Err(e)) => Err((state.line, e).into()),
+                (false, Err(e)) => Err((n, e).into()),
             }
         })
-        .map(|r| r.elves)
+        .map(|(_, elves)| elves)
 }
 
 fn find_maximum_calories(doc: &str) -> Result<Option<u32>, ParseError> {
