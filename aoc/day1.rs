@@ -39,28 +39,31 @@ fn parse_elves(inventory: &str) -> Result<Vec<Elf>, ParseError> {
     inventory
         .split_terminator("\n")
         .try_fold(initial, |mut state, line| {
-            if line.is_empty() {
-                state.elves.push(Elf::default());
-                return Ok(state);
-            }
-
-            // If we reach this point, this is our first non-empty line that we've seen.
-            // This means we're about to add an Elf, and one needs to be present for our
-            // vector access to work.
-            if state.elves.len() == 0 {
-                state.elves.push(Elf::default());
-            }
-
             state.line += 1;
 
-            let calories = str::parse(line).map_err(|e| (state.line, e))?;
-            let elf = state.elves.last_mut().expect(&format!(
-                "tried to add calories to an elf but there were none in the vec (line: {})",
-                state.line
-            ));
+            match (line.is_empty(), str::parse::<u32>(line)) {
+                (true, _) => {
+                    state.elves.push(Elf::default());
+                    Ok(state)
+                }
+                (false, Ok(calories)) => {
+                    // If we reach this point, this is our first non-empty line that we've seen.
+                    // This means we're about to add an Elf, and one needs to be present for our
+                    // vector access to work.
+                    if state.elves.len() == 0 {
+                        state.elves.push(Elf::default());
+                    }
 
-            elf.meals.push(calories);
-            Ok(state)
+                    let elf = state.elves.last_mut().expect(&format!(
+                        "tried to add calories to an elf but there were none in the vec (line: {})",
+                        state.line
+                    ));
+
+                    elf.meals.push(calories);
+                    Ok(state)
+                }
+                (false, Err(e)) => Err((state.line, e).into()),
+            }
         })
         .map(|r| r.elves)
 }
