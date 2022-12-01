@@ -111,9 +111,8 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use crate::Elf;
 
-    use super::{find_maximum_calories, find_top_three_highest_calories, parse_elves};
+    use super::{find_maximum_calories, find_top_three_highest_calories, parse_elves, Elf};
     const TEST_DOCUMENT: &str = "
 1000
 2000
