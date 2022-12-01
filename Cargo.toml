@@ -11,4 +11,3 @@ name = "day1"
 path = "aoc/day1.rs"
 
 [dependencies]
-
