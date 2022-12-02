@@ -2,8 +2,13 @@
 use aoc2022::Part;
 use std::io::Read;
 
+type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug)]
-pub struct ParseError;
+pub enum Error {
+    ParseError,
+    IOError,
+}
 
 #[derive(Default, Debug, PartialEq, Eq)]
 struct Elf {
@@ -40,10 +45,12 @@ impl Elf {
     }
 }
 
-fn parse_elves<R: Read>(mut reader: R) -> Result<Vec<Elf>, ParseError> {
+fn parse_elves<R: Read>(mut reader: R) -> Result<Vec<Elf>> {
     let mut inventory = String::new();
-    // This is bad but I do not care.
-    reader.read_to_string(&mut inventory).unwrap();
+
+    if let Err(_) = reader.read_to_string(&mut inventory) {
+        return Err(Error::IOError);
+    }
 
     let initial: (usize, Vec<Elf>) = (0, Vec::new());
     inventory
@@ -69,19 +76,19 @@ fn parse_elves<R: Read>(mut reader: R) -> Result<Vec<Elf>, ParseError> {
                     elf.add_meal(calories);
                     Ok((n, elves))
                 }
-                (false, Err(_)) => Err(ParseError {}),
+                (false, Err(_)) => Err(Error::ParseError {}),
             }
         })
         .map(|(_, elves)| elves)
 }
 
-fn find_maximum_calories<R: Read>(reader: R) -> Result<Option<u32>, ParseError> {
+fn find_maximum_calories<R: Read>(reader: R) -> Result<Option<u32>> {
     let elves = parse_elves(reader)?;
     let totals = elves.iter().map(|elf| elf.total_calories);
     Ok(totals.max())
 }
 
-fn find_top_three_highest_calories<R: Read>(mut reader: R) -> Result<Option<u32>, ParseError> {
+fn find_top_three_highest_calories<R: Read>(mut reader: R) -> Result<Option<u32>> {
     let mut elves = parse_elves(&mut reader)?;
     elves.sort_unstable_by_key(|elf| elf.total_calories);
     elves.reverse();
@@ -94,7 +101,7 @@ fn find_top_three_highest_calories<R: Read>(mut reader: R) -> Result<Option<u32>
     Ok(total)
 }
 
-pub(crate) fn execute<R: Read>(part: &Part, mut reader: R) -> Result<(), ParseError> {
+pub(crate) fn execute<R: Read>(part: &Part, mut reader: R) -> Result<()> {
     match part {
         Part::Part1 => {
             let calories = match find_maximum_calories(&mut reader)? {
