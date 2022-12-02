@@ -1,13 +1,9 @@
 // https://adventofcode.com/2022/day/1
-use clap::{Parser, ValueEnum};
-use std::{
-    fs::File,
-    io::{self, stdin, Read},
-    num::ParseIntError,
-};
+use aoc2022::Part;
+use std::{io::Read, num::ParseIntError};
 
 #[derive(Debug)]
-struct ParseError {
+pub struct ParseError {
     lineno: usize,
     reason: String,
 }
@@ -108,43 +104,9 @@ fn find_top_three_highest_calories<R: Read>(mut reader: R) -> Result<Option<u32>
     Ok(total)
 }
 
-#[derive(ValueEnum, Clone)]
-enum Mode {
-    Part1,
-    Part2,
-}
-
-#[derive(Parser)]
-struct Program {
-    #[arg(long)]
-    mode: Mode,
-
-    #[arg(name = "FILE", default_value = "-")]
-    input_file: String,
-}
-
-impl Program {
-    fn get_reader(&self) -> io::Result<Box<dyn Read>> {
-        let read: Box<dyn Read> = match self.input_file.as_str() {
-            "" | "-" => Box::new(stdin()),
-            name => Box::new(File::open(name)?),
-        };
-
-        Ok(read)
-    }
-}
-
-fn run(program: &Program) -> Result<(), ParseError> {
-    let mut reader = match program.get_reader() {
-        Err(e) => {
-            eprintln!("Failed to open file for reader: {}", e);
-            std::process::exit(1);
-        }
-        Ok(reader) => reader,
-    };
-
-    match program.mode {
-        Mode::Part1 => {
+pub(crate) fn execute<R: Read>(part: &Part, mut reader: R) -> Result<(), ParseError> {
+    match part {
+        Part::Part1 => {
             let calories = match find_maximum_calories(&mut reader)? {
                 Some(cal) => cal,
                 None => 0,
@@ -152,7 +114,7 @@ fn run(program: &Program) -> Result<(), ParseError> {
 
             println!("{calories}");
         }
-        Mode::Part2 => {
+        Part::Part2 => {
             let calories = match find_top_three_highest_calories(&mut reader)? {
                 Some(cal) => cal,
                 None => 0,
@@ -163,13 +125,6 @@ fn run(program: &Program) -> Result<(), ParseError> {
     };
 
     Ok(())
-}
-
-fn main() {
-    let prog = Program::parse();
-    if let Err(e) = run(&prog) {
-        eprintln!("line {} error: {}", e.lineno, e.reason)
-    }
 }
 
 #[cfg(test)]
