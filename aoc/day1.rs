@@ -1,21 +1,9 @@
 // https://adventofcode.com/2022/day/1
 use aoc2022::Part;
-use std::{io::Read, num::ParseIntError};
+use std::io::Read;
 
 #[derive(Debug)]
-pub struct ParseError {
-    lineno: usize,
-    reason: String,
-}
-
-impl From<(usize, ParseIntError)> for ParseError {
-    fn from((n, err): (usize, ParseIntError)) -> Self {
-        Self {
-            lineno: n,
-            reason: err.to_string(),
-        }
-    }
-}
+pub struct ParseError;
 
 #[derive(Default, Debug, PartialEq, Eq)]
 struct Elf {
@@ -28,6 +16,12 @@ impl Elf {
         Elf::default()
     }
 
+    fn add_meal(&mut self, calories: u32) {
+        self.meals.push(calories);
+        self.total_calories += calories;
+    }
+
+    #[cfg(test)]
     fn with_meals(meals: Vec<u32>) -> Self {
         let mut elf = Self::new();
         elf.meals = meals;
@@ -35,11 +29,7 @@ impl Elf {
         elf
     }
 
-    fn add_meal(&mut self, calories: u32) {
-        self.meals.push(calories);
-        self.total_calories += calories;
-    }
-
+    #[cfg(test)]
     fn refresh_total_calories(&mut self) {
         let mut total = 0;
         for meal in &self.meals {
@@ -79,7 +69,7 @@ fn parse_elves<R: Read>(mut reader: R) -> Result<Vec<Elf>, ParseError> {
                     elf.add_meal(calories);
                     Ok((n, elves))
                 }
-                (false, Err(e)) => Err((n, e).into()),
+                (false, Err(_)) => Err(ParseError {}),
             }
         })
         .map(|(_, elves)| elves)
