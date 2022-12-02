@@ -88,8 +88,7 @@ fn get_reader(name: &str) -> io::Result<Box<dyn Read>> {
 
 fn main() {
     let args = Cli::parse();
-    let reader = get_reader("-").unwrap();
-
+    let reader = get_reader(&args.file).unwrap();
     let result = match args.problem {
         Problem::Day1 => day1::execute(&args.part, reader),
         Problem::Day2 => day2::execute(&args.part, reader),

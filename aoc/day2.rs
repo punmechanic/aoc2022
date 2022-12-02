@@ -1,8 +1,19 @@
 // https://adventofcode.com/2022/day/2
 use std::{io::Read, str::FromStr};
 
-pub(crate) fn execute<R: Read>(_part: &aoc2022::Part, mut _reader: R) -> aoc2022::Result<()> {
-    unimplemented!();
+use aoc2022::Part;
+
+pub(crate) fn execute<R: Read>(part: &aoc2022::Part, mut reader: R) -> aoc2022::Result<()> {
+    match part {
+        Part::Part1 => {
+            let mut raw = String::new();
+            reader.read_to_string(&mut raw)?;
+            let guide: StrategyGuide = raw.parse().unwrap();
+            println!("{}", guide.calculate_score());
+        }
+        _ => unimplemented!(),
+    }
+    Ok(())
 }
 
 #[derive(Debug)]
