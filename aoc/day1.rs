@@ -50,10 +50,12 @@ fn parse_elves<R: Read>(reader: R) -> Result<Vec<Elf>> {
     let initial: (usize, Vec<Elf>) = (0, Vec::new());
     let iter = split_bytes(reader);
     iter.map(|res| {
-        // TODO: Remove unwrap()s
-        res.map(|b| String::from_utf8(b).unwrap()).unwrap()
+        let bytes = res.map_err(|_| Error::IOError)?;
+        let line = String::from_utf8(bytes).map_err(|_| Error::Utf8Error)?;
+        Ok(line)
     })
     .try_fold(initial, |(n, mut elves), line| {
+        let line = line?;
         match (line.is_empty(), str::parse::<u32>(line.as_str())) {
             // Acts as a "flush", putting a new elf on the stack.
             (true, _) => {
