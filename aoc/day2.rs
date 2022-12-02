@@ -8,7 +8,7 @@ pub(crate) fn execute<R: Read>(part: &aoc2022::Part, mut reader: R) -> aoc2022::
         Part::Part1 => {
             let mut raw = String::new();
             reader.read_to_string(&mut raw)?;
-            let guide: StrategyGuide = raw.parse().unwrap();
+            let guide: StrategyGuide1 = raw.parse().unwrap();
             println!("{}", guide.calculate_score());
         }
         _ => unimplemented!(),
@@ -28,15 +28,26 @@ impl From<UnknownActionError> for StrategyGuideError {
     }
 }
 
-struct StrategyGuide {
+/// Determines if  A won or lost the round based on the given actions.
+fn determine_round_outcome(a: Action, b: Action) -> Outcome {
+    match (a, b) {
+        (a, b) if a == b => Outcome::Draw,
+        (Action::Paper, Action::Rock)
+        | (Action::Scissors, Action::Paper)
+        | (Action::Rock, Action::Scissors) => Outcome::Win,
+        _ => Outcome::Loss,
+    }
+}
+
+struct StrategyGuide1 {
     actions: Vec<(Action, Action)>,
 }
 
-impl FromStr for StrategyGuide {
+impl FromStr for StrategyGuide1 {
     type Err = StrategyGuideError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut guide = StrategyGuide {
+        let mut guide = StrategyGuide1 {
             actions: Vec::new(),
         };
 
@@ -49,28 +60,17 @@ impl FromStr for StrategyGuide {
     }
 }
 
-/// Determines if  A won or lost the round based on the given actions.
-fn determine_round_outcome(a: Action, b: Action) -> Outcome {
-    match (a, b) {
-        (a, b) if a == b => Outcome::Draw,
-        (Action::Paper, Action::Rock)
-        | (Action::Scissors, Action::Paper)
-        | (Action::Rock, Action::Scissors) => Outcome::Win,
-        _ => Outcome::Loss,
+impl StrategyGuide1 {
+    fn calculate_round_score(me: Action, opponent: Action) -> u32 {
+        me.u32() + determine_round_outcome(me, opponent).u32()
     }
-}
 
-fn calculate_round_score(me: Action, opponent: Action) -> u32 {
-    me.u32() + determine_round_outcome(me, opponent).u32()
-}
-
-impl StrategyGuide {
     /// Calculates the score of each action in the strategy guide.
     ///
     /// The score is equal to a fixed amount for the shape you played (1 for Rock, 2 for Paper and 3 for Scissors), plus an additional amount based on the outcome of the round; 0 for a loss, 3 for a draw and 6 for a win.
     fn calculate_score(&self) -> u32 {
         self.actions.iter().fold(0, |score, (opponent, me)| {
-            score + calculate_round_score(*me, *opponent)
+            score + Self::calculate_round_score(*me, *opponent)
         })
     }
 }
@@ -118,7 +118,7 @@ impl Outcome {
 
 #[cfg(test)]
 mod tests {
-    use crate::day2::{determine_round_outcome, Action, Outcome, StrategyGuide};
+    use crate::day2::{determine_round_outcome, Action, Outcome, StrategyGuide1};
 
     #[test]
     fn has_correct_scores() {
@@ -156,7 +156,7 @@ mod tests {
 B X
 C Z";
 
-        let guide: StrategyGuide = raw.parse().expect("Failed to parse");
+        let guide: StrategyGuide1 = raw.parse().expect("Failed to parse");
         assert_eq!(guide.actions[0], (Action::Rock, Action::Paper));
         assert_eq!(guide.actions[1], (Action::Paper, Action::Rock));
         assert_eq!(guide.actions[2], (Action::Scissors, Action::Scissors));
@@ -167,7 +167,7 @@ C Z";
         let raw = "A Y
 B X
 C Z";
-        let guide: StrategyGuide = raw.parse().unwrap();
+        let guide: StrategyGuide1 = raw.parse().unwrap();
         assert_eq!(guide.calculate_score(), 15);
     }
 }
