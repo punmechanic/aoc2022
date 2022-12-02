@@ -1,15 +1,6 @@
 // https://adventofcode.com/2022/day/1
-use aoc2022::Part;
+use aoc2022::{Part, Result};
 use std::io::{self, BufRead, BufReader, Read};
-
-type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Debug)]
-pub enum Error {
-    ParseError,
-    IOError,
-    Utf8Error,
-}
 
 #[derive(Default, Debug, PartialEq, Eq)]
 struct Elf {
@@ -49,35 +40,32 @@ fn split_bytes<R: Read>(r: R) -> impl Iterator<Item = io::Result<Vec<u8>>> {
 fn parse_elves<R: Read>(reader: R) -> Result<Vec<Elf>> {
     let initial: (usize, Vec<Elf>) = (0, Vec::new());
     let iter = split_bytes(reader);
-    iter.map(|res| {
-        let bytes = res.map_err(|_| Error::IOError)?;
-        let line = String::from_utf8(bytes).map_err(|_| Error::Utf8Error)?;
+    iter.map(|line| {
+        let bytes = line?;
+        let line = String::from_utf8(bytes)?;
         Ok(line)
     })
-    .try_fold(initial, |(n, mut elves), line| {
+    .try_fold(initial, |(n, mut elves), line: Result<String>| {
         let line = line?;
-        match (line.is_empty(), str::parse::<u32>(line.as_str())) {
+        if line.is_empty() {
             // Acts as a "flush", putting a new elf on the stack.
-            (true, _) => {
-                elves.push(Elf::new());
-                Ok((n, elves))
-            }
-            (false, Ok(calories)) => {
-                let elf = {
-                    if elves.len() == 0 {
-                        // This is our first non-empty line.
-                        elves.push(Elf::new());
-                    };
-
-                    // It's not possible for this to be None because we already check if its empty above.
-                    elves.last_mut().unwrap()
-                };
-
-                elf.add_meal(calories);
-                Ok((n, elves))
-            }
-            (false, Err(_)) => Err(Error::ParseError {}),
+            elves.push(Elf::new());
+            return Ok((n, elves));
         }
+
+        let calories = str::parse::<u32>(line.as_str())?;
+        let elf = {
+            if elves.len() == 0 {
+                // This is our first non-empty line.
+                elves.push(Elf::new());
+            };
+
+            // It's not possible for this to be None because we already check if its empty above.
+            elves.last_mut().unwrap()
+        };
+
+        elf.add_meal(calories);
+        Ok((n, elves))
     })
     .map(|(_, elves)| elves)
 }
