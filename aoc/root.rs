@@ -1,5 +1,5 @@
 use aoc2022::Part;
-use clap::{Parser, Subcommand};
+use clap::{Parser, ValueEnum};
 use std::{
     fs::File,
     io::{self, stdin, Read},
@@ -11,22 +11,21 @@ mod day1;
 #[derive(Debug, Parser)]
 #[command(name = "aoc2022", about = "Advent of Code 2022", long_about = None)]
 struct Cli {
-    #[command(subcommand)]
-    problem: Commands,
+    #[arg(short, long, help = "The problem to run the given input against.")]
+    problem: Problem,
 
-    #[arg(short, long)]
+    #[arg(long)]
     part: Part,
 
     #[arg(
-        global = true,
         help = "The file to use as an input source. If this is the literal -, stdin is used instead.",
         default_value = "-"
     )]
     file: String,
 }
 
-#[derive(Debug, Subcommand)]
-enum Commands {
+#[derive(Debug, Clone, ValueEnum)]
+enum Problem {
     Day1,
 }
 
@@ -44,7 +43,7 @@ fn main() {
     let reader = get_reader("-").unwrap();
 
     let result = match args.problem {
-        Commands::Day1 => day1::execute(&args.part, reader),
+        Problem::Day1 => day1::execute(&args.part, reader),
     };
 
     result.unwrap();
