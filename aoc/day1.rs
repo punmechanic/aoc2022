@@ -27,21 +27,16 @@ impl Elf {
     }
 
     #[cfg(test)]
-    fn with_meals(meals: Vec<u32>) -> Self {
-        let mut elf = Self::new();
-        elf.meals = meals;
-        elf.refresh_total_calories();
-        elf
-    }
-
-    #[cfg(test)]
-    fn refresh_total_calories(&mut self) {
+    fn with_meals(meals: &[u32]) -> Self {
         let mut total = 0;
-        for meal in &self.meals {
+        for meal in meals {
             total += meal;
         }
 
-        self.total_calories = total;
+        Elf {
+            meals: meals.into(),
+            total_calories: total,
+        }
     }
 }
 
@@ -148,11 +143,11 @@ mod tests {
     fn it_populates_elves_correctly() {
         let elves = &parse_elves(TEST_DOCUMENT).unwrap()[..];
         let expected = &[
-            Elf::with_meals(vec![1000, 2000, 3000]),
-            Elf::with_meals(vec![4000]),
-            Elf::with_meals(vec![5000, 6000]),
-            Elf::with_meals(vec![7000, 8000, 9000]),
-            Elf::with_meals(vec![10000]),
+            Elf::with_meals(&[1000, 2000, 3000]),
+            Elf::with_meals(&[4000]),
+            Elf::with_meals(&[5000, 6000]),
+            Elf::with_meals(&[7000, 8000, 9000]),
+            Elf::with_meals(&[10000]),
         ][..];
 
         for n in 0..expected.len() {
