@@ -1,6 +1,6 @@
 // https://adventofcode.com/2022/day/1
 use aoc2022::Part;
-use std::io::Read;
+use std::io::{self, BufRead, BufReader, Read};
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -8,6 +8,7 @@ type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     ParseError,
     IOError,
+    Utf8Error,
 }
 
 #[derive(Default, Debug, PartialEq, Eq)]
@@ -40,41 +41,43 @@ impl Elf {
     }
 }
 
-fn parse_elves<R: Read>(mut reader: R) -> Result<Vec<Elf>> {
-    let mut inventory = String::new();
+fn split_bytes<R: Read>(r: R) -> impl Iterator<Item = io::Result<Vec<u8>>> {
+    let buf = BufReader::new(r);
+    buf.split(b'\n')
+}
 
-    if let Err(_) = reader.read_to_string(&mut inventory) {
-        return Err(Error::IOError);
-    }
-
+fn parse_elves<R: Read>(reader: R) -> Result<Vec<Elf>> {
     let initial: (usize, Vec<Elf>) = (0, Vec::new());
-    inventory
-        .split_terminator("\n")
-        .try_fold(initial, |(n, mut elves), line| {
-            match (line.is_empty(), str::parse::<u32>(line)) {
-                // Acts as a "flush", putting a new elf on the stack.
-                (true, _) => {
-                    elves.push(Elf::new());
-                    Ok((n, elves))
-                }
-                (false, Ok(calories)) => {
-                    let elf = {
-                        if elves.len() == 0 {
-                            // This is our first non-empty line.
-                            elves.push(Elf::new());
-                        };
-
-                        // It's not possible for this to be None because we already check if its empty above.
-                        elves.last_mut().unwrap()
+    let iter = split_bytes(reader);
+    iter.map(|res| {
+        // TODO: Remove unwrap()s
+        res.map(|b| String::from_utf8(b).unwrap()).unwrap()
+    })
+    .try_fold(initial, |(n, mut elves), line| {
+        match (line.is_empty(), str::parse::<u32>(line.as_str())) {
+            // Acts as a "flush", putting a new elf on the stack.
+            (true, _) => {
+                elves.push(Elf::new());
+                Ok((n, elves))
+            }
+            (false, Ok(calories)) => {
+                let elf = {
+                    if elves.len() == 0 {
+                        // This is our first non-empty line.
+                        elves.push(Elf::new());
                     };
 
-                    elf.add_meal(calories);
-                    Ok((n, elves))
-                }
-                (false, Err(_)) => Err(Error::ParseError {}),
+                    // It's not possible for this to be None because we already check if its empty above.
+                    elves.last_mut().unwrap()
+                };
+
+                elf.add_meal(calories);
+                Ok((n, elves))
             }
-        })
-        .map(|(_, elves)| elves)
+            (false, Err(_)) => Err(Error::ParseError {}),
+        }
+    })
+    .map(|(_, elves)| elves)
 }
 
 fn find_maximum_calories<R: Read>(reader: R) -> Result<Option<u32>> {
