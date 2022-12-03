@@ -62,7 +62,7 @@
 use aoc2022::{Part, Result};
 use itertools::Itertools;
 use std::{
-    collections::HashMap,
+    collections::HashSet,
     io::{BufRead, BufReader, Read},
 };
 
@@ -88,53 +88,41 @@ fn priority(ch: char) -> std::result::Result<u32, ErrControlCharacter> {
 }
 
 fn solve<R: Read>(reader: R) -> u32 {
-    let buf = BufReader::new(reader);
-    let res = buf.lines().fold(0u32, |acc, line| {
-        let line = line.unwrap();
-        if line.len() == 0 {
-            return acc;
-        }
+    BufReader::new(reader)
+        .lines()
+        .filter_ok(|line| !line.is_empty())
+        .map_ok(|line| line.chars().collect::<Vec<char>>())
+        .fold_ok(0u32, |acc, chars| {
+            let mid = chars.len() / 2;
+            let halves: (HashSet<char>, HashSet<char>) = (
+                HashSet::from_iter(chars.iter().copied().take(mid)),
+                HashSet::from_iter(chars.iter().copied().skip(mid)),
+            );
 
-        let mid = line.len() / 2;
-        let halves = (&line[0..=mid], &line[mid..]);
-        let mut shared = None;
-        for c in halves.0.chars() {
-            if halves.1.contains(c) {
-                shared = Some(c);
-                break;
-            }
-        }
-
-        acc + priority(shared.unwrap()).unwrap()
-    });
-
-    res
+            let shared = halves.0.intersection(&halves.1).next();
+            acc + priority(*shared.unwrap()).unwrap()
+        })
+        .unwrap()
 }
 
 fn solve2_with_index<R: Read>(reader: R) -> u32 {
     // Another way to solve the Part 2 problem is to build an index of all characters used in each group, and count which char shows up exactly 3 times.
-    let buf = BufReader::new(reader);
-    buf.lines()
+    BufReader::new(reader)
+        .lines()
         .filter_ok(|line| !line.is_empty())
         .chunks(3)
         .into_iter()
         .fold(0, |acc, group| {
-            let lines: Vec<Vec<char>> = group
-                .map(|line| line.expect("could not unwrap line").chars().collect())
-                .collect();
-
-            let index = lines.iter().fold(HashMap::new(), |mut index, line| {
-                for c in line.iter().unique() {
-                    index.entry(*c).and_modify(|n| *n += 1u32).or_insert(1);
-                }
-
-                index
-            });
-
-            acc + index
-                .iter()
-                .find_map(|(k, v)| if *v == 3 { Some(k) } else { None })
-                .map(|ch| priority(*ch).unwrap())
+            // This will panic if there's a problem reading lines, or if any group contains more than exactly one character that is shared.
+            acc + group
+                .map(|line| HashSet::from_iter(line.unwrap().chars()))
+                .fold(HashSet::new(), |prev, next| {
+                    prev.intersection(&next).copied().collect()
+                })
+                .into_iter()
+                .next()
+                .map(priority)
+                .unwrap()
                 .unwrap()
         })
 }
