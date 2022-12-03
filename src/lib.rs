@@ -12,7 +12,7 @@ pub enum Part {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub enum Error {
     ParseIntError,
     IOError,
