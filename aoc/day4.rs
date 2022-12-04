@@ -49,7 +49,7 @@ use std::io::{BufRead, BufReader, Read};
 pub(crate) fn execute<R: Read>(part: &Part, reader: R) -> Result<()> {
     match part {
         Part::Part1 => println!("{}", solve1(reader)),
-        _ => todo!(),
+        Part::Part2 => println!("{}", solve2(reader)),
     };
 
     Ok(())
@@ -61,47 +61,50 @@ fn create_bitset(rangeish: &str) -> u128 {
     let parts: Vec<&str> = rangeish.split('-').collect();
     let start = parts[0].parse::<u128>().unwrap();
     let end = parts[1].parse::<u128>().unwrap();
-    let mut x = 0u128;
-    for n in 0..BITSET_LEN {
-        if n <= end && n >= start {
-            x |= 1 << n;
-        }
-    }
 
-    x
+    (0..BITSET_LEN).fold(0u128, |bits, n| {
+        if n <= end && n >= start {
+            bits | 1 << n
+        } else {
+            bits
+        }
+    })
+}
+
+fn solve_shared<R: Read>(reader: R) -> impl Iterator<Item = std::io::Result<(u128, u128)>> {
+    BufReader::new(reader)
+        .lines()
+        .filter_ok(|line| !line.is_empty())
+        .map_ok(|line| {
+            let parts = line.split(",").collect::<Vec<&str>>();
+            match parts[..] {
+                [a, b] => (create_bitset(a), create_bitset(b)),
+                _ => panic!("badly formed line"),
+            }
+        })
 }
 
 fn solve1<R: Read>(reader: R) -> u128 {
-    // We need to find the number of times assignment pairs _fully_ overlap.
-    // Partial overlaps are OK - full overlaps are not.
-    //
-    // We only care about overlaps within a pair; the easiest way to do this would be to represent each assignment as a set of bit flags, then
-    // step through each bit to see if both are set.
-    let buf = BufReader::new(reader);
-    let mut overlaps = 0;
-    for res in buf.lines().filter_ok(|line| !line.is_empty()) {
-        let line = res.unwrap();
-        let parts = line.split(",").collect::<Vec<&str>>();
-        let (a, b) = match parts[..] {
-            [a, b] => (create_bitset(a), create_bitset(b)),
-            _ => panic!("badly formed line"),
-        };
+    solve_shared(reader)
+        .fold_ok(0, |previous, (a, b)| {
+            // a & !b == 0 determines if a was entirely consisted of the bits of b; all bits of b are unset on a, so if the result is 0, then a was a subset of b.
+            previous + if a & !b == 0 || b & !a == 0 { 1 } else { 0 }
+        })
+        .unwrap()
+}
 
-        // Because there can be only one assignment per elf per pair, as long as one of the bitmasks fully envelops the other, we can say there's an overlap.
-        // The easiest way to work this out is to BITAND the inverse of both and compare the flags.
-        //
-        // a & !b == 0 will determine if all of the bits in b were contained in a - if they were, then all of the bits in the result would be set to 0.
-        if a & !b == 0 || b & !a == 0 {
-            overlaps += 1
-        }
-    }
-
-    overlaps
+fn solve2<R: Read>(reader: R) -> u128 {
+    solve_shared(reader)
+        .fold_ok(0, |previous, (a, b)| {
+            // a & b > 0 determines if a and b contained any bits in common.
+            previous + if a & b > 0 { 1 } else { 0 }
+        })
+        .unwrap()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::solve1;
+    use super::{solve1, solve2};
     const SAMPLE_DOC: &[u8] = b"
 2-4,6-8
 2-3,4-5
@@ -114,5 +117,10 @@ mod tests {
     #[test]
     fn solve_part1_works() {
         assert_eq!(2, solve1(std::io::Cursor::new(SAMPLE_DOC)));
+    }
+
+    #[test]
+    fn solve_part2_works() {
+        assert_eq!(4, solve2(std::io::Cursor::new(SAMPLE_DOC)));
     }
 }
