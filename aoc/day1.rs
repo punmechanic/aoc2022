@@ -55,7 +55,7 @@ fn parse_elves<R: Read>(reader: R) -> Result<Vec<Elf>> {
 
         let calories = str::parse::<u32>(line.as_str())?;
         let elf = {
-            if elves.len() == 0 {
+            if elves.is_empty() {
                 // This is our first non-empty line.
                 elves.push(Elf::new());
             };
@@ -90,24 +90,12 @@ fn find_top_three_highest_calories<R: Read>(mut reader: R) -> Result<Option<u32>
 }
 
 pub(crate) fn execute<R: Read>(part: &Part, mut reader: R) -> Result<()> {
-    match part {
-        Part::Part1 => {
-            let calories = match find_maximum_calories(&mut reader)? {
-                Some(cal) => cal,
-                None => 0,
-            };
-
-            println!("{calories}");
-        }
-        Part::Part2 => {
-            let calories = match find_top_three_highest_calories(&mut reader)? {
-                Some(cal) => cal,
-                None => 0,
-            };
-
-            println!("{calories}");
-        }
+    let calories = match part {
+        Part::Part1 => find_maximum_calories(&mut reader)?.unwrap_or(0),
+        Part::Part2 => find_top_three_highest_calories(&mut reader)?.unwrap_or(0),
     };
+
+    println!("{calories}");
 
     Ok(())
 }

@@ -76,7 +76,7 @@ fn solve_shared<R: Read>(reader: R) -> impl Iterator<Item = std::io::Result<(u12
         .lines()
         .filter_ok(|line| !line.is_empty())
         .map_ok(|line| {
-            let parts = line.split(",").collect::<Vec<&str>>();
+            let parts = line.split(',').collect::<Vec<&str>>();
             match parts[..] {
                 [a, b] => (create_bitset(a), create_bitset(b)),
                 _ => panic!("badly formed line"),

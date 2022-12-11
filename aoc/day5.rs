@@ -31,7 +31,7 @@ fn solve1<R: Read>(reader: R) -> Result<String> {
         let line = line.unwrap();
         match mode {
             Mode::Assignments => {
-                if assignments.len() > 0 && line.is_empty() {
+                if !assignments.is_empty() && line.is_empty() {
                     mode = Mode::Instructions;
                 }
 
@@ -75,7 +75,7 @@ fn solve1<R: Read>(reader: R) -> Result<String> {
 
     // We need to reverse the buckets because they are currently in the wrong order;
     // we are reading the list from the top-down.
-    for (_, bucket) in &mut buckets {
+    for bucket in buckets.values_mut() {
         bucket.reverse()
     }
 
@@ -84,7 +84,7 @@ fn solve1<R: Read>(reader: R) -> Result<String> {
         // each instruction is in a predictable format;
         // move N from X to Y
         // The crates act like a stack.
-        let parts: Vec<&str> = instr.split(" ").collect();
+        let parts: Vec<&str> = instr.split(' ').collect();
         let count: u32 = parts[1].parse().unwrap();
         let src: u32 = parts[3].parse().unwrap();
         let dst: u32 = parts[5].parse().unwrap();
@@ -121,7 +121,7 @@ fn solve2<R: Read>(reader: R) -> Result<String> {
         let line = line.unwrap();
         match mode {
             Mode::Assignments => {
-                if assignments.len() > 0 && line.is_empty() {
+                if !assignments.is_empty() && line.is_empty() {
                     mode = Mode::Instructions;
                 }
 
@@ -165,7 +165,7 @@ fn solve2<R: Read>(reader: R) -> Result<String> {
 
     // We need to reverse the buckets because they are currently in the wrong order;
     // we are reading the list from the top-down.
-    for (_, bucket) in &mut buckets {
+    for bucket in buckets.values_mut() {
         bucket.reverse()
     }
 
@@ -174,7 +174,7 @@ fn solve2<R: Read>(reader: R) -> Result<String> {
         // each instruction is in a predictable format;
         // move N from X to Y
         // The crates act like a stack.
-        let parts: Vec<&str> = instr.split(" ").collect();
+        let parts: Vec<&str> = instr.split(' ').collect();
         let count: u32 = parts[1].parse().unwrap();
         let src: u32 = parts[3].parse().unwrap();
         let dst: u32 = parts[5].parse().unwrap();
@@ -209,10 +209,10 @@ mod tests {
     use super::{solve1, solve2};
 
     const TEST_DOCUMENT: &[u8] = b"
-    [D]    
-[N] [C]    
+    [D]
+[N] [C]
 [Z] [M] [P]
- 1   2   3 
+ 1   2   3
 
 move 1 from 2 to 1
 move 3 from 1 to 3

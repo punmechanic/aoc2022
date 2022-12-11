@@ -17,7 +17,7 @@ pub(crate) fn execute<R: Read>(part: &Part, mut reader: R) -> Result<()> {
 
 fn solve(input: &str, unique: usize) -> Option<u32> {
     let start: Vec<char> = input.chars().take(unique).collect();
-    let rest: Vec<char> = input.chars().skip(unique).collect();
+    let rest = input.chars().skip(unique);
     let initial = (unique, start, None);
     let n = rest.into_iter().fold(initial, |(n, previous, value), c| {
         let new = [&previous[1..unique], &[c][..]].concat();

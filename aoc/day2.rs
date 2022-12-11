@@ -24,7 +24,6 @@ pub(crate) fn execute<R: Read>(part: &aoc2022::Part, mut reader: R) -> aoc2022::
 
 #[derive(Debug)]
 enum StrategyGuideError {
-    InvalidFormatError,
     UnknownActionError,
     UnknownOutcomeError,
 }
@@ -70,7 +69,7 @@ impl FromStr for StrategyGuide1 {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut guide = StrategyGuide1::new();
         for line in s.lines() {
-            let parts: Vec<&str> = line.split(" ").collect();
+            let parts: Vec<&str> = line.split(' ').collect();
             guide.actions.push((parts[0].parse()?, parts[1].parse()?));
         }
 
@@ -99,12 +98,6 @@ struct StrategyGuide2 {
 }
 
 impl StrategyGuide2 {
-    fn new() -> Self {
-        Self {
-            actions: Vec::new(),
-        }
-    }
-
     fn calculate_round_score(desired_outcome: Outcome, opponent: Action) -> u32 {
         desired_outcome.u32()
             + calculate_action_for_desired_outcome(opponent, desired_outcome).u32()
@@ -131,7 +124,7 @@ impl FromStr for StrategyGuide2 {
         };
 
         for line in s.lines() {
-            let parts: Vec<&str> = line.split(" ").collect();
+            let parts: Vec<&str> = line.split(' ').collect();
             guide.actions.push((parts[0].parse()?, parts[1].parse()?));
         }
 
